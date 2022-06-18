@@ -4,7 +4,7 @@
 use nom::IResult;
 use nom::bytes::complete::tag;
 use nom::combinator::{map, verify};
-use nom::number::complete::le_i16;
+use nom::number::complete::{le_i16, le_u16};
 use nom::sequence::tuple;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,10 +22,10 @@ struct CRXHeader {
 fn crx_header(input: &[u8]) -> IResult<&[u8], CRXHeader> {
     verify(
         map(
-            tuple((le_i16, le_i16, le_i16, le_i16, le_i16, le_i16, le_i16, le_i16)),
-            |(inner_x, inner_y, width, height, version, flag, bpp, unknown)| CRXHeader { inner_x, inner_y, width, height, version, flag, bpp, unknown }
+            tuple((le_i16, le_i16, le_u16, le_u16, le_u16, le_u16, le_i16, le_u16)),
+            |(inner_x, inner_y, width, height, compression, flag, bpp, mode)| CRXHeader { inner_x, inner_y, width, height, compression, flag, bpp, mode }
         ),
-        |header| (header.version == 2 || header.version == 3) && (header.flag & 0xF) > 1 && (header.bpp == 0 || header.bpp == 1)
+        |header| (header.compression >= 2 || header.compression <= 3)
     )(input)
 }
 
