@@ -7,7 +7,17 @@ use nom::combinator::{map, verify};
 use nom::number::complete::le_i16;
 use nom::sequence::tuple;
 
-use crate::CRXHeader;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CRXHeader {
+    pub inner_x: i16,
+    pub inner_y: i16,
+    pub width: u16,
+    pub height: u16,
+    pub compression: u16,
+    pub flag: u16,
+    pub bpp: i16,
+    pub mode: u16,
+}
 
 fn crx_header(input: &[u8]) -> IResult<&[u8], CRXHeader> {
     verify(
@@ -19,6 +29,7 @@ fn crx_header(input: &[u8]) -> IResult<&[u8], CRXHeader> {
     )(input)
 }
 
+/*
 pub fn parse_crx(input: &[u8]) -> IResult<&[u8], CRXHeader> {
     let (input, header) = map(
         tuple((tag("CRXG"), crx_header)),
@@ -26,3 +37,4 @@ pub fn parse_crx(input: &[u8]) -> IResult<&[u8], CRXHeader> {
     )(input)?;
     todo!()
 }
+*/
