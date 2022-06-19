@@ -3,7 +3,7 @@
 mod decoder;
 use decoder::decode;
 
-use std::{fs, io, ffi::OsStr};
+use std::{fs, io};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct CrxHeader {
@@ -38,7 +38,10 @@ impl CrxFile {
     }
 
     /// Read and build a `CrxFile` object from a specified file name and path.
-    pub fn read_from_filename(filename: &OsStr) -> io::Result<Self> {
+    pub fn read_from_filename<P>(filename: P) -> io::Result<Self>
+    where
+        P: AsRef<std::path::Path>
+    {
         let file = fs::File::open(filename)?;
         Self::from_file(&file)
     }
