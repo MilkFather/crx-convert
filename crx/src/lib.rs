@@ -80,7 +80,7 @@ impl From<CrxFile> for image::DynamicImage {
             8 => {
                 // RGB indexed image buffer
                 let buf = ImageBuffer::from_fn(f.header.width as u32, f.header.height as u32, |x, y| {
-                    let pix_offset = 1_usize * (y as usize * f.header.width as usize + x as usize);
+                    let pix_offset = y as usize * f.header.width as usize + x as usize;
                     let index = f.buffer[pix_offset];
                     image::Rgb(f.palette[index as usize])
                 });

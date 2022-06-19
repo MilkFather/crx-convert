@@ -114,7 +114,7 @@ fn decode_header<R: Read + Seek>(reader: &mut R) -> io::Result<CrxHeader> {
     let mode = reader.read_u16::<LittleEndian>()?;
 
     // Verify that the version is supported (1, 2, 3)
-    if version < 1 || version > 3 {
+    if !(1..=3).contains(&version) {
         return Err(DecoderError::VersionNotSupported(version).into());
     }
     
@@ -217,7 +217,7 @@ fn unpack_2(buf: &[u8], header: &CrxHeader) -> io::Result<Vec<u8>> {
     // Number of bytes in a row's data. This applies to both input and output (they have the same value).
     let stride = pixel_size * header.width as usize;
 
-    let mut buf = Cursor::new(inflate::inflate_bytes_zlib(buf).map_err(|e| DecoderError::InflateFailure(e))?);
+    let mut buf = Cursor::new(inflate::inflate_bytes_zlib(buf).map_err(DecoderError::InflateFailure)?);
     let mut output: Vec<u8> = vec![0; stride * header.height as usize];
 
     if bpp >= 24 {
