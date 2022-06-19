@@ -61,9 +61,17 @@ fn main() {
                 if md.is_file() {
                     do_one_file(uri);
                 } else if md.is_dir() {
-                    for file in walkdir::WalkDir::new(uri).into_iter().filter_map(|f| f.ok()) {
-                        if file.metadata().unwrap().is_file() {
-                            do_one_file(file.path());
+                    if arg.contains_id("recursive") {
+                        for file in walkdir::WalkDir::new(uri).into_iter().filter_map(|f| f.ok()) {
+                            if file.metadata().unwrap().is_file() {
+                                do_one_file(file.path());
+                            }
+                        }
+                    } else {
+                        for file in fs::read_dir(uri).unwrap().filter_map(|f| f.ok()) {
+                            if file.metadata().unwrap().is_file() {
+                                do_one_file(file.path());
+                            }
                         }
                     }
                 } else {
