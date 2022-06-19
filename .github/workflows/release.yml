@@ -1,0 +1,51 @@
+name: Build Release
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  build windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --release --package crx-convert
+      - uses: actions/upload-artifact@v2
+        with:
+          name: windows
+          path: target/release/crx-convert.exe
+
+  build macos:
+    runs-on: macOS-latest
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --release --package crx-convert
+      - uses: actions/upload-artifact@v2
+        with:
+          name: macOS
+          path: target/release/crx-convert
+
+  build ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --release --package crx-convert
+      - uses: actions/upload-artifact@v2
+        with:
+          name: macOS
+          path: target/release/crx-convert
