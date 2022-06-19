@@ -10,4 +10,7 @@ workspaces = [
 ]
 
 [dependencies]
-crx = { path = "crx", feature = [ "parse" ] }
+crx = { path = "crx" }
+image = "0.24"
+clap = "3.2.5"
+walkdir = "2"
