@@ -6,7 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nom = { version = "7", optional = true }
-
-[features]
-parse = [ "nom" ]
+image = "0.24"
+byteorder = "1.4"
+inflate = "0.4"
