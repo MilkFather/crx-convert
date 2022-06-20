@@ -110,7 +110,7 @@ fn main() {
                         }
                     }
                 } else {
-                    print_skip(&uri, "neither a file nor a directory");
+                    print_skip(&uri, "Neither a file nor a directory");
                 }
             },
             Err(e) => print_skip(&uri, e),
