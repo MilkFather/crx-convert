@@ -1,4 +1,4 @@
-use std::{fs, path};
+use std::{fs, path, ffi};
 
 fn build_arg() -> clap::Command<'static> {
     use clap::{Command, Arg};
@@ -68,7 +68,14 @@ where
                 Err(e) => print_fail(&uri, e),
             }
         },
-        Err(e) => println!("Failed: \"{}\" ({})", uri.as_ref().to_string_lossy(), e)
+        Err(crx::DecoderError::CrxSignatureInvalid) => {
+            if let Some(ext) = uri.as_ref().extension() {
+                if ext.eq_ignore_ascii_case(ffi::OsString::from("CRX")) {
+                    print_fail(&uri, crx::DecoderError::CrxSignatureInvalid);
+                }
+            }
+        },
+        Err(e) => print_fail(&uri, e),
     }
 }
 
