@@ -21,6 +21,33 @@ fn build_arg() -> clap::Command<'static> {
         ])
 }
 
+#[inline(always)]
+fn print_success<P, Q>(src: P, dst: Q)
+where
+    P: AsRef<path::Path>,
+    Q: AsRef<path::Path>,
+{
+    println!("Converted \"{}\" -> \"{}\"", src.as_ref().to_string_lossy(), dst.as_ref().to_string_lossy());
+}
+
+#[inline(always)]
+fn print_fail<P, Q>(src: P, err: Q)
+where
+    P: AsRef<path::Path>,
+    Q: ToString,
+{
+    println!("   Failed \"{}\": {}", src.as_ref().to_string_lossy(), err.to_string());
+}
+
+#[inline(always)]
+fn print_skip<P, Q>(src: P, reason: Q)
+where
+    P: AsRef<path::Path>,
+    Q: ToString,
+{
+    println!("  Skipped \"{}\": {}", src.as_ref().to_string_lossy(), reason.to_string());
+}
+
 fn do_one_file<Q>(uri: Q)
 where
     Q: AsRef<path::Path>
@@ -37,8 +64,8 @@ where
         Ok(file) => {
             let image: DynamicImage = file.into();
             match image.save_with_format(&output, ImageFormat::Png) {
-                Ok(_) => println!("Converted: \"{}\" -> \"{}\"", uri.as_ref().to_string_lossy(), output.to_string_lossy()),
-                Err(e) => println!("Failed: \"{}\" ({})", uri.as_ref().to_string_lossy(), e),
+                Ok(_) => print_success(&uri, &output),
+                Err(e) => print_fail(&uri, e),
             }
         },
         Err(e) => println!("Failed: \"{}\" ({})", uri.as_ref().to_string_lossy(), e)
@@ -75,10 +102,10 @@ fn main() {
                         }
                     }
                 } else {
-                    println!("Skipped: \"{}\" (neither a file nor a directory)", uri);
+                    print_skip(&uri, "neither a file nor a directory");
                 }
             },
-            Err(e) => println!("Skipped: \"{}\" ({})", uri, e),
+            Err(e) => print_skip(&uri, e),
         }
     }
 }
