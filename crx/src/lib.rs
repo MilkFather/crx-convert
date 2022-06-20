@@ -2,6 +2,7 @@
 
 mod decoder;
 use decoder::decode;
+pub use decoder::DecoderError;
 
 use std::{fs, io};
 
@@ -26,19 +27,19 @@ pub struct CrxFile {
 
 impl CrxFile {
     /// Build a `CrxFile` object from a buffer.
-    pub fn from_buffer(buf: &[u8]) -> io::Result<Self> {
+    pub fn from_buffer(buf: &[u8]) -> Result<Self, DecoderError> {
         let mut cursor = io::Cursor::new(buf);
         decode(&mut cursor)
     }
 
     /// Build a `CrxFile` object from a `std::fs::File` object.
-    pub fn from_file(file: &fs::File) -> io::Result<Self> {
+    pub fn from_file(file: &fs::File) -> Result<Self, DecoderError> {
         let mut buf = io::BufReader::new(file);
         decode(&mut buf)
     }
 
     /// Read and build a `CrxFile` object from a specified file name and path.
-    pub fn read_from_filename<P>(filename: P) -> io::Result<Self>
+    pub fn read_from_filename<P>(filename: P) -> Result<Self, DecoderError>
     where
         P: AsRef<std::path::Path>
     {

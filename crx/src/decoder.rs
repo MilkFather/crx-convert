@@ -5,8 +5,9 @@ use byteorder::{ReadBytesExt, LittleEndian};
 
 use crate::{CrxFile, CrxHeader, depth_to_bpp};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum DecoderError {
+    IO(io::Error),
     CrxSignatureInvalid,
     VersionNotSupported(u16),
     InvalidRowDecodeMode(u8),
@@ -17,6 +18,7 @@ pub enum DecoderError {
 impl fmt::Display for DecoderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::IO(e) => e.fmt(f),
             Self::CrxSignatureInvalid => f.write_str("CRX signature not found"),
             Self::VersionNotSupported(v) => f.write_fmt(format_args!("Unsupported image version: {}", v)),
             Self::InvalidRowDecodeMode(c) => f.write_fmt(format_args!("Invalid row decode mode: {}", c)),
@@ -28,18 +30,27 @@ impl fmt::Display for DecoderError {
 
 impl From<DecoderError> for io::Error {
     fn from(e: DecoderError) -> Self {
-        Self::new(io::ErrorKind::InvalidData, e.to_string())
+        match e {
+            DecoderError::IO(err) => err,
+            _ => Self::new(io::ErrorKind::InvalidData, e.to_string()),
+        }
+    }
+}
+
+impl From<io::Error> for DecoderError {
+    fn from(e: io::Error) -> Self {
+        Self::IO(e)
     }
 }
 
 impl error::Error for DecoderError {}
 
-pub fn decode<R: Read + Seek>(reader: &mut R) -> io::Result<CrxFile> {
+pub fn decode<R: Read + Seek>(reader: &mut R) -> Result<CrxFile, DecoderError> {
     // Read signature
     let mut sig: [u8; 4] = [0; 4];
     reader.read_exact(&mut sig)?;
     if b"CRXG" != &sig {
-        return Err(DecoderError::CrxSignatureInvalid.into());
+        return Err(DecoderError::CrxSignatureInvalid);
     }
 
     // Read header
@@ -103,7 +114,7 @@ pub fn decode<R: Read + Seek>(reader: &mut R) -> io::Result<CrxFile> {
 }
 
 /// Decodes the header of a CRX file.
-fn decode_header<R: Read + Seek>(reader: &mut R) -> io::Result<CrxHeader> {
+fn decode_header<R: Read + Seek>(reader: &mut R) -> Result<CrxHeader, DecoderError> {
     let inner_x = reader.read_i16::<LittleEndian>()?;
     let inner_y = reader.read_i16::<LittleEndian>()?;
     let width = reader.read_u16::<LittleEndian>()?;
@@ -115,7 +126,7 @@ fn decode_header<R: Read + Seek>(reader: &mut R) -> io::Result<CrxHeader> {
 
     // Verify that the version is supported (1, 2, 3)
     if !(1..=3).contains(&version) {
-        return Err(DecoderError::VersionNotSupported(version).into());
+        return Err(DecoderError::VersionNotSupported(version));
     }
     
     Ok(CrxHeader {
@@ -127,7 +138,7 @@ fn decode_header<R: Read + Seek>(reader: &mut R) -> io::Result<CrxHeader> {
 /// 
 /// A palette is present only if the header's `depth` is not 0 or 1.
 /// `depth` encodes both the size of the palette, and the depth of each palette color.
-fn decode_palette<R: Read + Seek>(reader: &mut R, depth: usize) -> io::Result<Vec<[u8; 3]>> {
+fn decode_palette<R: Read + Seek>(reader: &mut R, depth: usize) -> Result<Vec<[u8; 3]>, DecoderError> {
     let color_size = if 0x102 == depth { 4 } else { 3 };
     let colors = if depth > 0x100 { 0x100 } else { depth };
     let mut palette: Vec<[u8; 3]> = Vec::new();
@@ -150,7 +161,7 @@ fn decode_palette<R: Read + Seek>(reader: &mut R, depth: usize) -> io::Result<Ve
     Ok(palette)
 }
 
-fn unpack_1(buf: &[u8], header: &CrxHeader) -> io::Result<Vec<u8>> {
+fn unpack_1(buf: &[u8], header: &CrxHeader) -> Result<Vec<u8>, DecoderError> {
     // The implementation of GARBro seems to be problematic. Tried to fix it.
     let mut window: [u8; 0x10000] = [0; 0x10000];
     let mut flag: i32 = 0;
@@ -211,7 +222,7 @@ fn unpack_1(buf: &[u8], header: &CrxHeader) -> io::Result<Vec<u8>> {
     Ok(output)
 }
 
-fn unpack_2(buf: &[u8], header: &CrxHeader) -> io::Result<Vec<u8>> {
+fn unpack_2(buf: &[u8], header: &CrxHeader) -> Result<Vec<u8>, DecoderError> {
     let bpp = depth_to_bpp(header.depth);
     let pixel_size = bpp as usize / 8;
     // Number of bytes in a row's data. This applies to both input and output (they have the same value).
@@ -296,7 +307,7 @@ fn unpack_2(buf: &[u8], header: &CrxHeader) -> io::Result<Vec<u8>> {
                         }
                     }
                 }
-                other => return Err(DecoderError::InvalidRowDecodeMode(other).into())
+                other => return Err(DecoderError::InvalidRowDecodeMode(other))
             }
         }
     } else {
