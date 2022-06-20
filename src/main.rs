@@ -49,7 +49,7 @@ where
     println!("{} \"{}\": {}", "  Skipped".dimmed().bold(), src.as_ref().to_string_lossy(), reason.to_string());
 }
 
-fn do_one_file<Q>(uri: Q)
+fn do_one_file<Q>(uri: Q, force_show_error: bool)
 where
     Q: AsRef<path::Path>
 {
@@ -69,8 +69,10 @@ where
                 Err(e) => print_fail(&uri, e),
             }
         },
-        Err(crx::DecoderError::CrxSignatureInvalid) => {
-            if let Some(ext) = uri.as_ref().extension() {
+        Err(DecoderError::CrxSignatureInvalid) => {
+            if force_show_error {
+                print_fail(&uri, DecoderError::CrxSignatureInvalid);
+            } else if let Some(ext) = uri.as_ref().extension() {
                 if ext.eq_ignore_ascii_case(ffi::OsString::from("CRX")) {
                     print_fail(&uri, DecoderError::CrxSignatureInvalid);
                 }
@@ -94,18 +96,18 @@ fn main() {
         match fs::metadata(uri) {
             Ok(md) => {
                 if md.is_file() {
-                    do_one_file(uri);
+                    do_one_file(uri, true);
                 } else if md.is_dir() {
                     if arg.contains_id("recursive") {
                         for file in walkdir::WalkDir::new(uri).into_iter().filter_map(|f| f.ok()) {
                             if file.metadata().unwrap().is_file() {
-                                do_one_file(file.path());
+                                do_one_file(file.path(), false);
                             }
                         }
                     } else {
                         for file in fs::read_dir(uri).unwrap().filter_map(|f| f.ok()) {
                             if file.metadata().unwrap().is_file() {
-                                do_one_file(file.path());
+                                do_one_file(file.path(), false);
                             }
                         }
                     }
