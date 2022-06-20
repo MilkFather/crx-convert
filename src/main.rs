@@ -52,7 +52,7 @@ fn do_one_file<Q>(uri: Q)
 where
     Q: AsRef<path::Path>
 {
-    use crx::CrxFile;
+    use crx::{CrxFile, DecoderError};
     use image::{DynamicImage, ImageFormat};
 
     // Determine output path
@@ -71,7 +71,7 @@ where
         Err(crx::DecoderError::CrxSignatureInvalid) => {
             if let Some(ext) = uri.as_ref().extension() {
                 if ext.eq_ignore_ascii_case(ffi::OsString::from("CRX")) {
-                    print_fail(&uri, crx::DecoderError::CrxSignatureInvalid);
+                    print_fail(&uri, DecoderError::CrxSignatureInvalid);
                 }
             }
         },
