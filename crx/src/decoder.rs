@@ -298,7 +298,7 @@ fn unpack_2(buf: &[u8], header: &CrxHeader) -> Result<Vec<u8>, DecoderError> {
                                     xb += pixel_size;
                                 }
                                 remaining -= count;
-                                if val > 0 {
+                                if remaining > 0 {
                                     val = buf.read_u8()?;
                                 }
                             } else {
