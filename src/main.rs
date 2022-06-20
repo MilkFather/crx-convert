@@ -1,4 +1,5 @@
 use std::{fs, path, ffi};
+use owo_colors::OwoColorize;
 
 fn build_arg() -> clap::Command<'static> {
     use clap::{Command, Arg};
@@ -27,7 +28,7 @@ where
     P: AsRef<path::Path>,
     Q: AsRef<path::Path>,
 {
-    println!("Converted \"{}\" -> \"{}\"", src.as_ref().to_string_lossy(), dst.as_ref().to_string_lossy());
+    println!("{} \"{}\" -> \"{}\"", "Converted".green().bold(), src.as_ref().to_string_lossy(), dst.as_ref().to_string_lossy());
 }
 
 #[inline(always)]
@@ -36,7 +37,7 @@ where
     P: AsRef<path::Path>,
     Q: ToString,
 {
-    println!("   Failed \"{}\": {}", src.as_ref().to_string_lossy(), err.to_string());
+    println!("{} \"{}\": {}", "   Failed".red().bold(), src.as_ref().to_string_lossy(), err.to_string());
 }
 
 #[inline(always)]
@@ -45,7 +46,7 @@ where
     P: AsRef<path::Path>,
     Q: ToString,
 {
-    println!("  Skipped \"{}\": {}", src.as_ref().to_string_lossy(), reason.to_string());
+    println!("{} \"{}\": {}", "  Skipped".dimmed().bold(), src.as_ref().to_string_lossy(), reason.to_string());
 }
 
 fn do_one_file<Q>(uri: Q)
