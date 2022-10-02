@@ -1,8 +1,8 @@
 use std::{fs, path, ffi};
 use owo_colors::OwoColorize;
 
-fn build_arg() -> clap::Command<'static> {
-    use clap::{Command, Arg};
+fn build_arg() -> clap::Command {
+    use clap::{Command, Arg, ArgAction};
 
     Command::new("CRX CIRCUS Image Format Decoder")
         .about("Decode CRX files in games made by CIRCUS")
@@ -10,13 +10,12 @@ fn build_arg() -> clap::Command<'static> {
             Arg::new("recursive")
                 .short('r')
                 .required(false)
-                .takes_value(false)
+                .action(ArgAction::SetTrue)
                 .help("When decoding a directory, recursively visit sub-directories"),
             Arg::new("uri")
                 .value_name("URI")
                 .required(true)
-                .takes_value(true)
-                .multiple_values(true)
+                .action(ArgAction::Append)
                 .help("The location of CRX files")
                 .long_help("The location of CRX files, you can provide multiple values. If URI is a file, decodes the file. If the URI is a directory, decodes every image in the directory.")
         ])
@@ -98,7 +97,8 @@ fn main() {
                 if md.is_file() {
                     do_one_file(uri, true);
                 } else if md.is_dir() {
-                    if arg.contains_id("recursive") {
+                    let recursive = arg.get_one::<bool>("recursive").unwrap();
+                    if *recursive {
                         for file in walkdir::WalkDir::new(uri).into_iter().filter_map(|f| f.ok()) {
                             if file.metadata().unwrap().is_file() {
                                 do_one_file(file.path(), false);
