@@ -13,7 +13,7 @@ members = [
 [dependencies]
 crx = { path = "crx" }
 image = "0.24"
-clap = "4.0.7"
+clap = "4.0.18"
 walkdir = "2"
 owo-colors = "3"
 
