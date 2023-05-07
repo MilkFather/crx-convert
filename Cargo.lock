@@ -146,20 +146,12 @@ dependencies = [
 
 [[package]]
 name = "crx"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "byteorder",
+ "clap",
  "image",
  "inflate",
-]
-
-[[package]]
-name = "crx-convert"
-version = "0.1.0"
-dependencies = [
- "clap",
- "crx",
- "image",
  "owo-colors",
  "walkdir",
 ]
