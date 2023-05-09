@@ -1,5 +1,5 @@
-use byteorder::{ReadBytesExt, LittleEndian};
-use std::io::{Read, self};
+use byteorder::{LittleEndian, ReadBytesExt};
+use std::io::{self, Read};
 
 const CRX_SIGNATURE: &[u8; 4] = b"CRXG";
 
@@ -20,10 +20,12 @@ pub enum CrxDecodeError {
 }
 
 macro_rules! decode_error {
-    ($e:expr) => {{ std::io::Error::new(std::io::ErrorKind::InvalidData, $e) }};
+    ($e:expr) => {{
+        std::io::Error::new(std::io::ErrorKind::InvalidData, $e)
+    }};
 }
 
-#[cfg(feature="to_image")]
+#[cfg(feature = "to_image")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum CrxImageConvertError {
     #[error("invalid raw pixel color buffer")]
@@ -100,7 +102,11 @@ impl CrxFile {
         };
 
         // read palette, iff bpp is 8.
-        let palette = if bpp == 8 { Some(Self::read_palette(reader.by_ref(), header.depth as i32)?) } else { None };
+        let palette = if bpp == 8 {
+            Some(Self::read_palette(reader.by_ref(), header.depth as i32)?)
+        } else {
+            None
+        };
 
         // read clipping information
         let clips = if header.version >= 3 {
@@ -178,24 +184,24 @@ impl CrxFile {
     fn read_palette<R: Read>(mut reader: R, depth: i32) -> io::Result<Vec<[u8; 3]>> {
         let color_size = if depth == 0x102 { 4 } else { 3 };
         let colors = if depth > 0x100 { 0x100 } else { depth };
-    let mut palette: Vec<[u8; 3]> = Vec::new();
+        let mut palette: Vec<[u8; 3]> = Vec::new();
 
-    for _ in 0..colors {
-        let r = reader.read_u8()?;
-        let mut g = reader.read_u8()?;
-        let b = reader.read_u8()?;
-        // I don't know why this fourth component exists, even if it is not used.
-        if 4 == color_size {
-            reader.read_u8()?;
+        for _ in 0..colors {
+            let r = reader.read_u8()?;
+            let mut g = reader.read_u8()?;
+            let b = reader.read_u8()?;
+            // I don't know why this fourth component exists, even if it is not used.
+            if 4 == color_size {
+                reader.read_u8()?;
+            }
+            // Also I don't know why there is no yellow color in the palette.
+            if 0xFF == b && 0 == g && 0xFF == r {
+                g = 0xFF;
+            }
+            palette.push([r, g, b]);
         }
-        // Also I don't know why there is no yellow color in the palette.
-        if 0xFF == b && 0 == g && 0xFF == r {
-            g = 0xFF;
-        }
-        palette.push([r, g, b]);
-    }
 
-    Ok(palette)
+        Ok(palette)
     }
 
     fn read_clip<R: Read>(mut reader: R) -> io::Result<Vec<CrxImageClip>> {
@@ -203,7 +209,7 @@ impl CrxFile {
         let mut clips = Vec::with_capacity(clip_count as usize);
         for _ in 0..clip_count {
             let clip = CrxImageClip::read(reader.by_ref())?;
-                clips.push(clip);
+            clips.push(clip);
         }
         Ok(clips)
     }
@@ -290,7 +296,12 @@ impl CrxFile {
             // convert palette indices to pixel values.
             for pix in 0..context.width * context.height {
                 let index = indices[pix] as usize;
-                let color = context.palette.get(index).ok_or_else(|| decode_error!(CrxDecodeError::BadPaletteIndex(context.palette.len(), index)))?;
+                let color = context.palette.get(index).ok_or_else(|| {
+                    decode_error!(CrxDecodeError::BadPaletteIndex(
+                        context.palette.len(),
+                        index
+                    ))
+                })?;
                 output[pix * pixel_size] = color[0];
                 output[pix * pixel_size + 1] = color[1];
                 output[pix * pixel_size + 2] = color[2];
@@ -307,37 +318,49 @@ impl CrxFile {
                         reader.read_exact(&mut output[row_offset..row_offset + pixel_size])?;
                         // read the remaining pixels (per byte) in the same row.
                         for xb in pixel_size..stride {
-                            output[row_offset + xb] = reader.read_u8()?.wrapping_add(output[row_offset + xb - pixel_size]);
+                            output[row_offset + xb] = reader
+                                .read_u8()?
+                                .wrapping_add(output[row_offset + xb - pixel_size]);
                         }
                     }
                     1 => {
                         // pixels values are provided as the differences from the corresponding x-position of previous row.
-                        let prev_row_offset = prev_row_offset.ok_or_else(|| decode_error!(CrxDecodeError::NoPreviousRow))?;
+                        let prev_row_offset = prev_row_offset
+                            .ok_or_else(|| decode_error!(CrxDecodeError::NoPreviousRow))?;
                         for xb in 0..stride {
-                            output[row_offset + xb] = reader.read_u8()?.wrapping_add(output[prev_row_offset + xb]);
+                            output[row_offset + xb] =
+                                reader.read_u8()?.wrapping_add(output[prev_row_offset + xb]);
                         }
                     }
                     2 => {
                         // first pixel is provided as is, remaining pixels are differences from the the previous row, left-shifting one pixel.
                         // get previous row offset.
-                        let prev_row_offset = prev_row_offset.ok_or_else(|| decode_error!(CrxDecodeError::NoPreviousRow))?;
+                        let prev_row_offset = prev_row_offset
+                            .ok_or_else(|| decode_error!(CrxDecodeError::NoPreviousRow))?;
                         // read the first pixel value as is.
                         reader.read_exact(&mut output[row_offset..row_offset + pixel_size])?;
                         // read the remaining pixels (per byte) in the same row.
                         for xb in pixel_size..stride {
-                            output[row_offset + xb] = reader.read_u8()?.wrapping_add(output[prev_row_offset + xb - pixel_size]);
+                            output[row_offset + xb] = reader
+                                .read_u8()?
+                                .wrapping_add(output[prev_row_offset + xb - pixel_size]);
                         }
                     }
                     3 => {
                         // last pixel is provided as is, pixels before it are differences from the previous row, right-shifting one pixel
                         // get previous row offset.
-                        let prev_row_offset = prev_row_offset.ok_or_else(|| decode_error!(CrxDecodeError::NoPreviousRow))?;
+                        let prev_row_offset = prev_row_offset
+                            .ok_or_else(|| decode_error!(CrxDecodeError::NoPreviousRow))?;
                         // read the pixels
                         for xb in 0..stride - pixel_size {
-                            output[row_offset + xb] = reader.read_u8()?.wrapping_add(output[prev_row_offset + xb + pixel_size]);
+                            output[row_offset + xb] = reader
+                                .read_u8()?
+                                .wrapping_add(output[prev_row_offset + xb + pixel_size]);
                         }
                         // read the last pixel as is.
-                        reader.read_exact(&mut output[row_offset + stride - pixel_size..row_offset + stride])?;
+                        reader.read_exact(
+                            &mut output[row_offset + stride - pixel_size..row_offset + stride],
+                        )?;
                     }
                     4 => {
                         // input is organized by pixel component, for each component, same-value compression is used.
@@ -364,7 +387,9 @@ impl CrxFile {
                                         output[xb] = next;
                                         xb += pixel_size;
                                     }
-                                    remaining = remaining.checked_sub(count).ok_or_else(|| decode_error!(CrxDecodeError::RowOverflow))?;
+                                    remaining = remaining.checked_sub(count).ok_or_else(|| {
+                                        decode_error!(CrxDecodeError::RowOverflow)
+                                    })?;
                                     if remaining > 0 {
                                         val = reader.read_u8()?;
                                     }
@@ -374,7 +399,9 @@ impl CrxFile {
                             }
                         }
                     }
-                    other => return Err(decode_error!(CrxDecodeError::InvalidRowDecodeMode(other)))
+                    other => {
+                        return Err(decode_error!(CrxDecodeError::InvalidRowDecodeMode(other)))
+                    }
                 }
             }
         }
@@ -383,35 +410,45 @@ impl CrxFile {
     }
 }
 
-#[cfg(feature="to_image")]
+#[cfg(feature = "to_image")]
 impl TryFrom<CrxFile> for image::DynamicImage {
     type Error = CrxImageConvertError;
 
     fn try_from(value: CrxFile) -> Result<Self, CrxImageConvertError> {
         match value.bpp {
             24 => {
-                let rgb_image = image::ImageBuffer::from_raw(value.width as u32, value.height as u32, value.raw_image_buffer).ok_or(CrxImageConvertError::InvalidRawBuffer)?;
+                let rgb_image = image::ImageBuffer::from_raw(
+                    value.width as u32,
+                    value.height as u32,
+                    value.raw_image_buffer,
+                )
+                .ok_or(CrxImageConvertError::InvalidRawBuffer)?;
                 Ok(image::DynamicImage::ImageRgb8(rgb_image))
             }
             32 => {
-                let rgba_image = image::ImageBuffer::from_raw(value.width as u32, value.height as u32, value.raw_image_buffer).ok_or(CrxImageConvertError::InvalidRawBuffer)?;
+                let rgba_image = image::ImageBuffer::from_raw(
+                    value.width as u32,
+                    value.height as u32,
+                    value.raw_image_buffer,
+                )
+                .ok_or(CrxImageConvertError::InvalidRawBuffer)?;
                 Ok(image::DynamicImage::ImageRgba8(rgba_image))
             }
-            x => Err(CrxImageConvertError::InvalidBPP(x))
+            x => Err(CrxImageConvertError::InvalidBPP(x)),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct CrxHeader {
-    pub inner_x: i16,       // offset 0x04
-    pub inner_y: i16,       // offset 0x06
-    pub width: u16,         // offset 0x08
-    pub height: u16,        // offset 0x0A
-    pub version: u16,       // offset 0x0C
-    pub flag: u16,          // offset 0x0E
-    pub depth: i16,         // offset 0x10
-    pub mode: u16,          // offset 0x12
+    pub inner_x: i16, // offset 0x04
+    pub inner_y: i16, // offset 0x06
+    pub width: u16,   // offset 0x08
+    pub height: u16,  // offset 0x0A
+    pub version: u16, // offset 0x0C
+    pub flag: u16,    // offset 0x0E
+    pub depth: i16,   // offset 0x10
+    pub mode: u16,    // offset 0x12
 }
 
 impl CrxHeader {
@@ -431,7 +468,14 @@ impl CrxHeader {
         }
 
         Ok(CrxHeader {
-            inner_x, inner_y, width, height, version, flag, depth, mode,
+            inner_x,
+            inner_y,
+            width,
+            height,
+            version,
+            flag,
+            depth,
+            mode,
         })
     }
 }
@@ -455,6 +499,13 @@ impl CrxImageClip {
         let field_5 = reader.read_i16::<LittleEndian>()?;
         let field_6 = reader.read_i16::<LittleEndian>()?;
 
-        Ok(Self { field_1, field_2, field_3, field_4, field_5, field_6 })
+        Ok(Self {
+            field_1,
+            field_2,
+            field_3,
+            field_4,
+            field_5,
+            field_6,
+        })
     }
 }
