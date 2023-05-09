@@ -3,6 +3,9 @@
 
 This repository is a [Rust](https://www.rust-lang.org) implementation of [GarBRO](https://github.com/morkt/GARbro)'s [CRX decoder](https://github.com/morkt/GARbro/blob/master/ArcFormats/Circus/ImageCRX.cs). It is cross-examined with [another available decoder implementation](https://github.com/crskycode/CIRCUS_CRX_Tool).
 
-Decoder is placed under `crx/`. Code under `src/` is a tiny tool that uses the decoder and convert CRX files into PNG. Run `cargo build` to build the tool and the decoder. You can convert one file, or all files under a folder (both recursively and not) using the tool.
+This tool is provided as a library. A sample converter is located at `src/bin/convert.rs`. To build the converter, run
+```sh
+cargo build --release --bin crx-convert --all-features
+```
 
-Reverse engineering is hard. There are certainly files that cannot be decoded. If you have a better understanding of this propertiary image format, please speak out.
+The simple converter accepts any number of CRX file paths as command line arguments, and convert them into PNG at the same location of the original files.
