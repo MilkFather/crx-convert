@@ -14,7 +14,7 @@ fn main() -> io::Result<()> {
     let arg = Arg::parse();
 
     arg.files.par_iter().for_each(|file| {
-        let f = fs::File::open(&file);
+        let f = fs::File::open(file);
         if let Err(e) = f {
             println!("{} \"{}\" read: {}", " Failed".red().bold(), file.to_string_lossy(), e);
             return;

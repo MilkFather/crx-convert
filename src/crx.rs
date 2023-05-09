@@ -256,7 +256,7 @@ impl CrxFile {
                         break;
                     }
                     offset &= 0xFFFF;
-                    let dat = window[offset as usize];
+                    let dat = window[offset];
                     offset += 1;
                     window[win_pos] = dat;
                     win_pos = (win_pos + 1) & 0xFFFF;
@@ -290,7 +290,7 @@ impl CrxFile {
             // convert palette indices to pixel values.
             for pix in 0..context.width * context.height {
                 let index = indices[pix] as usize;
-                let color = context.palette.get(index).ok_or(decode_error!(CrxDecodeError::BadPaletteIndex(context.palette.len(), index)))?;
+                let color = context.palette.get(index).ok_or_else(|| decode_error!(CrxDecodeError::BadPaletteIndex(context.palette.len(), index)))?;
                 output[pix * pixel_size] = color[0];
                 output[pix * pixel_size + 1] = color[1];
                 output[pix * pixel_size + 2] = color[2];
@@ -312,7 +312,7 @@ impl CrxFile {
                     }
                     1 => {
                         // pixels values are provided as the differences from the corresponding x-position of previous row.
-                        let prev_row_offset = prev_row_offset.ok_or(decode_error!(CrxDecodeError::NoPreviousRow))?;
+                        let prev_row_offset = prev_row_offset.ok_or_else(|| decode_error!(CrxDecodeError::NoPreviousRow))?;
                         for xb in 0..stride {
                             output[row_offset + xb] = reader.read_u8()?.wrapping_add(output[prev_row_offset + xb]);
                         }
@@ -320,7 +320,7 @@ impl CrxFile {
                     2 => {
                         // first pixel is provided as is, remaining pixels are differences from the the previous row, left-shifting one pixel.
                         // get previous row offset.
-                        let prev_row_offset = prev_row_offset.ok_or(decode_error!(CrxDecodeError::NoPreviousRow))?;
+                        let prev_row_offset = prev_row_offset.ok_or_else(|| decode_error!(CrxDecodeError::NoPreviousRow))?;
                         // read the first pixel value as is.
                         reader.read_exact(&mut output[row_offset..row_offset + pixel_size])?;
                         // read the remaining pixels (per byte) in the same row.
@@ -331,7 +331,7 @@ impl CrxFile {
                     3 => {
                         // last pixel is provided as is, pixels before it are differences from the previous row, right-shifting one pixel
                         // get previous row offset.
-                        let prev_row_offset = prev_row_offset.ok_or(decode_error!(CrxDecodeError::NoPreviousRow))?;
+                        let prev_row_offset = prev_row_offset.ok_or_else(|| decode_error!(CrxDecodeError::NoPreviousRow))?;
                         // read the pixels
                         for xb in 0..stride - pixel_size {
                             output[row_offset + xb] = reader.read_u8()?.wrapping_add(output[prev_row_offset + xb + pixel_size]);
@@ -364,7 +364,7 @@ impl CrxFile {
                                         output[xb] = next;
                                         xb += pixel_size;
                                     }
-                                    remaining = remaining.checked_sub(count).ok_or(decode_error!(CrxDecodeError::RowOverflow))?;
+                                    remaining = remaining.checked_sub(count).ok_or_else(|| decode_error!(CrxDecodeError::RowOverflow))?;
                                     if remaining > 0 {
                                         val = reader.read_u8()?;
                                     }
