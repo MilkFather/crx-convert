@@ -35,7 +35,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - run: cargo check --lib --all-features --verbose
+      - run: cargo check --workspace --all-features --verbose
 
   clippy-stable:
     strategy:
@@ -47,7 +47,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - run: cargo clippy --lib --all-features --verbose
+      - run: cargo clippy --workspace --all-features --verbose
 
   test-stable:
     strategy:
@@ -59,7 +59,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-      - run: cargo test --lib --all-features --verbose
+      - run: cargo test --workspace --all-features --verbose
 
   check-nightly:
     strategy:
@@ -71,43 +71,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
-      - run: cargo check --lib --all-features --verbose
-
-  check-bin-stable:
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-      - run: cargo check --bins --all-features --verbose
-
-  clippy-bin-stable:
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-      - run: cargo clippy --bins --all-features --verbose
-
-  check-bin-nightly:
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly
-      - run: cargo check --bins --all-features --verbose
+      - run: cargo check --workspace --all-features --verbose
 
   fmt:
     runs-on: ubuntu-latest
