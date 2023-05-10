@@ -1,29 +1,8 @@
-[package]
-name = "crx"
-version = "0.2.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-byteorder = "1.4"
-flate2 = "1.0"
-image = { version = "0.24", default-features = false, optional = true }
-thiserror = "1.0"
-
-clap = { version = "4.1.8", features = [ "derive" ], optional = true }
-rayon = { version = "1.7", optional = true }
-owo-colors = { version = "3", optional = true }
-
-[features]
-default = []
-to_image = [ "image" ]
-convert-cli = [ "clap", "rayon", "owo-colors", "image/png", "to_image" ]
-
-[[bin]]
-name = "crx-convert"
-path = "src/bin/convert.rs"
-required-features = [ "convert-cli" ]
+[workspace]
+members = [
+    "bin/convert",
+    "lib/crx",
+]
 
 [profile.release]
 lto = true
