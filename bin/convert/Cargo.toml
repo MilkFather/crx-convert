@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 byteorder = "1.4"
 crx = { path = "../../lib/crx", features = [ "to_image" ] }
-clap = { version = "4.3.0", features = [ "derive" ] }
+clap = { version = "4.3.19", features = [ "derive" ] }
 flate2 = "1.0"
 image = { version = "0.24", default-features = false, features = [ "png" ] }
 owo-colors = "3"
